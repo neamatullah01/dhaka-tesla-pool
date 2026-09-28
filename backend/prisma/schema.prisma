@@ -1,13 +1,301 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ----------------------------------------------------
+// ENUMS
+// ----------------------------------------------------
+
+enum UserRole {
+  PASSENGER
+  DRIVER
+}
+
+enum VehicleStatus {
+  OFFLINE
+  ONLINE
+  IN_TRIP
+}
+
+enum RideStatus {
+  REQUESTED
+  MATCHED
+  DRIVER_ARRIVED
+  STARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PoolStatus {
+  OPEN            // Accepting more passengers
+  DRIVER_ARRIVED  // Driver arrived at pickup
+  STARTED         // Trip locked & started; no new joins
+  COMPLETED       // All passengers dropped off
+  CANCELLED       // Cancelled by driver or system
+}
+
+enum PoolMemberStatus {
+  WAITING
+  PICKED_UP
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TESLAPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum CancellationReason {
+  PASSENGER_CANCELLED
+  DRIVER_CANCELLED
+  NO_SEATS_AVAILABLE
+}
+
+// ----------------------------------------------------
+// USERS & AUTHENTICATION
+// ----------------------------------------------------
+
+model User {
+  id                 String              @id @default(uuid())
+  name               String              // e.g., Jashim, Nusrat, Rafiq, Shirin
+  email              String              @unique
+  passwordHash       String
+  phone              String?
+  role               UserRole
+  walletBalancePaisa Int                 @default(0) // Integer paisa for simulated TeslaPay
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  vehicle            Vehicle?            // 1:1, populated if role = DRIVER
+  rideRequests       RideRequest[]       // Populated if role = PASSENGER
+  poolsAsDriver      Pool[]              @relation("DriverPools")
+  statusChangesMade  RideStatusHistory[] @relation("AuditChangedBy")
+  refreshTokens      RefreshToken[]
+
+  @@index([role, isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ----------------------------------------------------
+// VEHICLES (BULLET)
+// ----------------------------------------------------
+
+model Vehicle {
+  id        String        @id @default(uuid())
+  driverId  String        @unique
+  driver    User          @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  model     String        @default("Bullet") // Jashim's 3-seat electric Tesla
+  plateNo   String        @unique
+  capacity  Int           @default(3)        // Fixed capacity = 3 seats
+  status    VehicleStatus @default(OFFLINE)
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  pools     Pool[]
+
+  @@index([status])
+  @@map("vehicles")
+}
+
+// ----------------------------------------------------
+// GEOGRAPHY & DETERMINISTIC ROUTING
+// ----------------------------------------------------
+
+model Zone {
+  id           String   @id @default(uuid())
+  name         String   @unique // "Banani", "Gulshan 1", "Mohakhali", etc.
+  corridorCode String   // e.g. "CORRIDOR_NORTH_SOUTH" to group matchable hubs
+  routeOrder   Int      // Ordering along the corridor (e.g. Banani=1, Gulshan1=2, Mohakhali=3)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  pickupRides      RideRequest[]  @relation("PickupZone")
+  destinationRides RideRequest[]  @relation("DestinationZone")
+  distancesFrom    ZoneDistance[] @relation("FromZone")
+  distancesTo      ZoneDistance[] @relation("ToZone")
+  poolsStartedHere Pool[]         @relation("PoolOriginZone")
+
+  @@index([corridorCode, routeOrder])
+  @@map("zones")
+}
+
+model ZoneDistance {
+  id          String   @id @default(uuid())
+  fromZoneId  String
+  toZoneId    String
+  distanceKm  Float
+  createdAt   DateTime @default(now())
+
+  fromZone    Zone     @relation("FromZone", fields: [fromZoneId], references: [id], onDelete: Restrict)
+  toZone      Zone     @relation("ToZone", fields: [toZoneId], references: [id], onDelete: Restrict)
+
+  @@unique([fromZoneId, toZoneId])
+  @@index([fromZoneId])
+  @@index([toZoneId])
+  @@map("zone_distances")
+}
+
+// ----------------------------------------------------
+// RIDE REQUESTS (PASSENGER)
+// ----------------------------------------------------
+
+model RideRequest {
+  id                  String              @id @default(uuid())
+  passengerId         String
+  passenger           User                @relation(fields: [passengerId], references: [id], onDelete: Restrict)
+
+  pickupZoneId        String
+  pickupZone          Zone                @relation("PickupZone", fields: [pickupZoneId], references: [id], onDelete: Restrict)
+  destinationZoneId   String
+  destinationZone     Zone                @relation("DestinationZone", fields: [destinationZoneId], references: [id], onDelete: Restrict)
+
+  seatsRequested      Int                 @default(1)
+  status              RideStatus          @default(REQUESTED)
+
+  // Explicit, testable fare breakdown in Paisa (Section 5)
+  baseFarePaisa       Int
+  distanceFarePaisa   Int
+  poolDiscountPaisa   Int                 @default(0)
+  totalFarePaisa      Int
+
+  cancellationReason  CancellationReason?
+  cancellationNote    String?
+
+  requestedAt         DateTime            @default(now())
+  matchedAt           DateTime?
+  driverArrivedAt     DateTime?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  poolMembership      PoolMember?
+  statusHistory       RideStatusHistory[]
+  payment             Payment?
+
+  @@index([passengerId, status])
+  @@index([status, pickupZoneId])
+  @@index([pickupZoneId, destinationZoneId])
+  @@map("ride_requests")
+}
+
+// ----------------------------------------------------
+// POOL (SHARED TRIP BY JASHIM / BULLET)
+// ----------------------------------------------------
+
+model Pool {
+  id               String        @id @default(uuid())
+  driverId         String
+  driver           User          @relation("DriverPools", fields: [driverId], references: [id], onDelete: Restrict)
+  vehicleId        String
+  vehicle          Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+
+  originZoneId     String
+  originZone       Zone          @relation("PoolOriginZone", fields: [originZoneId], references: [id], onDelete: Restrict)
+  corridorCode     String        // Matches corridor of all accepted riders
+
+  status           PoolStatus    @default(OPEN)
+
+  // Enforces capacity <= 3. Locked in interactive transactions to handle concurrency.
+  totalCapacity    Int           @default(3)
+  seatsReserved    Int           @default(0)
+
+  driverArrivedAt  DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  members          PoolMember[]
+
+  @@index([driverId, status])
+  @@index([vehicleId, status])
+  @@index([status, corridorCode])
+  @@map("pools")
+}
+
+model PoolMember {
+  id            String           @id @default(uuid())
+  poolId        String
+  pool          Pool             @relation(fields: [poolId], references: [id], onDelete: Restrict)
+  rideRequestId String           @unique
+  rideRequest   RideRequest      @relation(fields: [rideRequestId], references: [id], onDelete: Restrict)
+
+  seatsAllocated Int             @default(1)
+  status        PoolMemberStatus @default(WAITING)
+
+  joinedAt      DateTime         @default(now())
+  pickedUpAt    DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+
+  @@unique([poolId, rideRequestId])
+  @@index([poolId, status])
+  @@map("pool_members")
+}
+
+// ----------------------------------------------------
+// AUDIT & PAYMENTS
+// ----------------------------------------------------
+
+model RideStatusHistory {
+  id            String       @id @default(uuid())
+  rideRequestId String
+  rideRequest   RideRequest  @relation(fields: [rideRequestId], references: [id], onDelete: Cascade)
+  fromStatus    RideStatus?
+  toStatus      RideStatus
+  changedById   String?
+  changedBy     User?        @relation("AuditChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+  note          String?
+  createdAt     DateTime     @default(now())
+
+  @@index([rideRequestId, createdAt])
+  @@map("ride_status_history")
+}
+
+model Payment {
+  id                   String        @id @default(uuid())
+  rideRequestId        String        @unique
+  rideRequest          RideRequest   @relation(fields: [rideRequestId], references: [id], onDelete: Restrict)
+  amountPaisa          Int           // Mirrors totalFarePaisa
+  method               PaymentMethod @default(CASH)
+  status               PaymentStatus @default(PENDING)
+  transactionReference String?       @unique
+  paidAt               DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([status])
+  @@map("payments")
 }
