@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ZonesModule } from './modules/zones/zones.module.js';
 import { DriverModule } from './modules/driver/driver.module.js';
 import { FaresModule } from './modules/fares/fares.module.js';
+import { RidesModule } from './modules/rides/rides.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { FaresModule } from './modules/fares/fares.module.js';
     ZonesModule,
     DriverModule,
     FaresModule,
+    RidesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
