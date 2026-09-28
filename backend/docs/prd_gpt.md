@@ -84,7 +84,6 @@ The MVP must support:
 - Ride status history/audit trail.
 - Validation.
 - Consistent error responses.
-- Swagger API documentation.
 - Automated tests.
 - Concurrency testing.
 - Docker Compose.
@@ -166,7 +165,6 @@ NestJS is the preferred backend choice for this project because:
 - Guards.
 - Interceptors.
 - Exception filters.
-- Swagger integration.
 - Easy testing.
 - Clear separation between controllers and business logic.
 
@@ -1304,11 +1302,11 @@ This is more accurate than marking every passenger completed at exactly the same
 
 ### State Machine Matrix: Pool vs. Ride Lifecycles
 
-| Driver Action | `Pool` State Transition | `RideRequest` / `PoolMember` State Transition |
-| --- | --- | --- |
-| Triggers **ARRIVE** at pickup | `OPEN` → `DRIVER_ARRIVED` | ALL associated rides: `MATCHED` → `DRIVER_ARRIVED` |
-| Triggers **START** trip | `DRIVER_ARRIVED` → `STARTED` | ALL associated rides: `DRIVER_ARRIVED` → `STARTED` |
-| Drops off an individual rider | No change to `Pool` | ONLY that rider's `RideRequest` & `PoolMember` → `COMPLETED` |
+| Driver Action                   | `Pool` State Transition                      | `RideRequest` / `PoolMember` State Transition                |
+| ------------------------------- | -------------------------------------------- | ------------------------------------------------------------ |
+| Triggers **ARRIVE** at pickup   | `OPEN` → `DRIVER_ARRIVED`                    | ALL associated rides: `MATCHED` → `DRIVER_ARRIVED`           |
+| Triggers **START** trip         | `DRIVER_ARRIVED` → `STARTED`                 | ALL associated rides: `DRIVER_ARRIVED` → `STARTED`           |
+| Drops off an individual rider   | No change to `Pool`                          | ONLY that rider's `RideRequest` & `PoolMember` → `COMPLETED` |
 | Drops off the last active rider | `STARTED` → `COMPLETED` (Vehicle → `ONLINE`) | The final rider's `RideRequest` & `PoolMember` → `COMPLETED` |
 
 ---
@@ -1335,7 +1333,7 @@ Rules:
 - Password minimum 8 characters.
 - Role must be valid.
 - Password must never be returned.
-- Password stored using Argon2 hash.
+- Password stored using bcrypt hash.
 
 ---
 
@@ -1640,12 +1638,6 @@ POST   /driver/rides/:rideId/payment/confirm
 GET /health
 ```
 
-## Swagger
-
-```text
-/docs
-```
-
 ---
 
 # 34. Feature Implementation Roadmap
@@ -1714,7 +1706,6 @@ Tasks:
 - Configure CORS.
 - Configure Helmet.
 - Configure global validation.
-- Configure Swagger.
 - Configure logging.
 - Create health endpoint.
 
@@ -3163,8 +3154,6 @@ feat(payment): add simulated payments
 test(ride): add lifecycle tests
 
 build(docker): add compose environment
-
-docs(api): add swagger documentation
 ```
 
 ---
@@ -3219,27 +3208,6 @@ Zone
  ├── Ride destination
  ├── Pool pickup
  └── ZoneRoute
-```
-
----
-
-# 32. API Documentation
-
-Swagger must document:
-
-- Endpoint.
-- Authentication.
-- Request body.
-- Response.
-- HTTP status codes.
-- DTO fields.
-- Enums.
-- Error examples.
-
-Swagger:
-
-```text
-/api/v1/docs
 ```
 
 ---
@@ -3354,7 +3322,6 @@ Backend is considered complete only when:
 - [ ] PostgreSQL connects.
 - [ ] Prisma migration works.
 - [ ] Seed works.
-- [ ] Swagger works.
 - [ ] Auth works.
 - [ ] Role authorization works.
 - [ ] Zones work.
@@ -3894,19 +3861,13 @@ Auth:
 
 ```bash
 npm install @nestjs/jwt @nestjs/passport passport passport-jwt
-npm install argon2
+npm install bcrypt
 ```
 
 Validation:
 
 ```bash
 npm install class-validator class-transformer
-```
-
-Swagger:
-
-```bash
-npm install @nestjs/swagger swagger-ui-express
 ```
 
 Security:
@@ -4011,7 +3972,6 @@ Implement exactly in this order:
 [ ] 08. Seed data
 [ ] 09. Global validation
 [ ] 10. Error handling
-[ ] 11. Swagger
 [ ] 12. Auth registration
 [ ] 13. Auth login
 [ ] 14. JWT access token
@@ -4259,6 +4219,7 @@ Ensure you have completed and submitted the following non-negotiable evaluative 
 ## AI Usage Log Template
 
 You must document how AI was used during this project:
+
 - [ ] List of tools used (e.g., ChatGPT, Claude, GitHub Copilot).
 - [ ] **1 accepted AI suggestion** with justification.
 - [ ] **1 rejected or modified AI suggestion** with justification.
@@ -4266,6 +4227,7 @@ You must document how AI was used during this project:
 ## 6-Minute Loom Demo Script Timecode Checkpoints
 
 Your demo video should strictly feature the PRD seed cast (Jashim, Bullet, Nusrat, Rafiq, Shirin). Ensure you capture these checkpoints:
+
 - [ ] Jashim (driver) login & online status.
 - [ ] Nusrat (passenger) ride request & driver acceptance (pool creation).
 - [ ] Rafiq (passenger) ride request & driver acceptance (pool join).
