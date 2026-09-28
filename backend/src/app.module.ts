@@ -6,6 +6,7 @@ import { validationSchema } from './config/validation.schema.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { ZonesModule } from './modules/zones/zones.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
     PrismaModule,
     UsersModule,
     AuthModule,
+    ZonesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
