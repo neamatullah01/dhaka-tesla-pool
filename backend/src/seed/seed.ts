@@ -36,6 +36,46 @@ async function main() {
   }
   console.log('Zones seeded.');
 
+  // 1.5 Create Zone Distances
+  const allZones = await prisma.zone.findMany();
+  const zoneMap = new Map(allZones.map((z) => [z.name, z.id]));
+
+  const distances = [
+    { from: 'Banani', to: 'Gulshan 1', distanceKm: 2.0 },
+    { from: 'Banani', to: 'Gulshan 2', distanceKm: 2.5 },
+    { from: 'Banani', to: 'Mohakhali', distanceKm: 3.0 },
+    { from: 'Banani', to: 'Farmgate', distanceKm: 6.0 },
+    { from: 'Gulshan 1', to: 'Gulshan 2', distanceKm: 1.5 },
+    { from: 'Gulshan 1', to: 'Mohakhali', distanceKm: 4.0 },
+    { from: 'Gulshan 1', to: 'Farmgate', distanceKm: 7.0 },
+    { from: 'Gulshan 2', to: 'Mohakhali', distanceKm: 4.5 },
+    { from: 'Gulshan 2', to: 'Farmgate', distanceKm: 7.5 },
+    { from: 'Mohakhali', to: 'Farmgate', distanceKm: 3.0 },
+    { from: 'Dhanmondi', to: 'Mirpur', distanceKm: 8.0 },
+  ];
+
+  const biDirectionalDistances = [];
+  for (const d of distances) {
+    biDirectionalDistances.push(d);
+    biDirectionalDistances.push({ from: d.to, to: d.from, distanceKm: d.distanceKm });
+  }
+
+  for (const d of biDirectionalDistances) {
+    const fromId = zoneMap.get(d.from);
+    const toId = zoneMap.get(d.to);
+    
+    if (fromId && toId) {
+      await prisma.zoneDistance.upsert({
+        where: {
+          fromZoneId_toZoneId: { fromZoneId: fromId, toZoneId: toId },
+        },
+        update: { distanceKm: d.distanceKm },
+        create: { fromZoneId: fromId, toZoneId: toId, distanceKm: d.distanceKm },
+      });
+    }
+  }
+  console.log('Zone distances seeded.');
+
   // 2. Create Driver (Jashim)
   const jashim = await prisma.user.upsert({
     where: { email: 'jashim@example.com' },
