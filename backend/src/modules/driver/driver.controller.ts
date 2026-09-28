@@ -74,4 +74,38 @@ export class DriverController {
     const poolData = await this.driverService.acceptRequest(user.id, rideId);
     return { success: true, message: 'Ride accepted', data: poolData };
   }
+
+  @ApiOperation({ summary: 'Get current active pool for driver' })
+  @ApiResponse({ status: 200, description: 'Current pool details' })
+  @Get('pools/current')
+  async getCurrentPool(@CurrentUser() user: User) {
+    const pool = await this.driverService.getCurrentPool(user.id);
+    return { success: true, data: pool };
+  }
+
+  @ApiOperation({ summary: 'Complete an individual ride in a pool' })
+  @ApiResponse({ status: 200, description: 'Ride completed' })
+  @Post('rides/:id/complete')
+  async completeRide(@CurrentUser() user: User, @Param('id') rideId: string) {
+    const ride = await this.driverService.completeRide(user.id, rideId);
+    return { success: true, message: 'Ride completed successfully', data: ride };
+  }
+
+  @ApiOperation({ summary: 'Confirm cash payment for a ride' })
+  @ApiResponse({ status: 200, description: 'Payment confirmed' })
+  @Post('rides/:id/payment/confirm')
+  async confirmPayment(@CurrentUser() user: User, @Param('id') rideId: string) {
+    const payment = await this.driverService.confirmPayment(user.id, rideId);
+    return { success: true, message: 'Payment confirmed', data: payment };
+  }
+
+  @ApiOperation({ summary: 'Get driver ride history' })
+  @ApiResponse({ status: 200, description: 'List of past rides' })
+  @Get('rides')
+  async getRides(@CurrentUser() user: User, @Query('page') page?: string, @Query('limit') limit?: string) {
+    const p = parseInt(page || '1', 10);
+    const l = Math.min(parseInt(limit || '20', 10), 100);
+    const rides = await this.driverService.getRides(user.id, p, l);
+    return { success: true, data: rides };
+  }
 }

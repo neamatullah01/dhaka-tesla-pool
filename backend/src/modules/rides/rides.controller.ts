@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Query } from '@nestjs/common';
 import { RidesService } from './rides.service.js';
 import { CreateRideDto } from './dto/create-ride.dto.js';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -27,5 +27,39 @@ export class RidesController {
       message: 'Ride requested successfully',
       data: ride,
     };
+  }
+
+  @ApiOperation({ summary: 'Cancel a ride request' })
+  @ApiResponse({ status: 200, description: 'Ride cancelled successfully' })
+  @Post(':id/cancel')
+  async cancelRide(@CurrentUser() user: User, @Param('id') rideId: string) {
+    const ride = await this.ridesService.cancelRide(user.id, rideId);
+    return { success: true, message: 'Ride cancelled successfully', data: ride };
+  }
+
+  @ApiOperation({ summary: 'Get current active ride' })
+  @ApiResponse({ status: 200, description: 'Current ride details' })
+  @Get('current')
+  async getCurrentRide(@CurrentUser() user: User) {
+    const ride = await this.ridesService.getCurrentRide(user.id);
+    return { success: true, data: ride };
+  }
+
+  @ApiOperation({ summary: 'Get ride by ID' })
+  @ApiResponse({ status: 200, description: 'Ride details' })
+  @Get(':id')
+  async getRideById(@CurrentUser() user: User, @Param('id') rideId: string) {
+    const ride = await this.ridesService.getRideById(user.id, rideId);
+    return { success: true, data: ride };
+  }
+
+  @ApiOperation({ summary: 'Get passenger ride history' })
+  @ApiResponse({ status: 200, description: 'List of past rides' })
+  @Get()
+  async getRides(@CurrentUser() user: User, @Query('page') page?: string, @Query('limit') limit?: string) {
+    const p = parseInt(page || '1', 10);
+    const l = Math.min(parseInt(limit || '20', 10), 100);
+    const rides = await this.ridesService.getRides(user.id, p, l);
+    return { success: true, data: rides };
   }
 }
