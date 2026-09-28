@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Query, Param } from '@nestjs/common';
 import { DriverService } from './driver.service.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
@@ -65,5 +65,13 @@ export class DriverController {
   async getRequests(@Query() query: GetRequestsDto) {
     const requests = await this.driverService.getRequests(query);
     return { success: true, data: requests };
+  }
+
+  @ApiOperation({ summary: 'Driver accepts a passenger ride request' })
+  @ApiResponse({ status: 200, description: 'Ride accepted and matched to pool.' })
+  @Post('requests/:id/accept')
+  async acceptRequest(@CurrentUser() user: User, @Param('id') rideId: string) {
+    const poolData = await this.driverService.acceptRequest(user.id, rideId);
+    return { success: true, message: 'Ride accepted', data: poolData };
   }
 }
