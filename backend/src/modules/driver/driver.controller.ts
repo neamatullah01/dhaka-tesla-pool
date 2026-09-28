@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Query } from '@nestjs/common';
 import { DriverService } from './driver.service.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
+import { GetRequestsDto } from './dto/get-requests.dto.js';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -56,5 +57,13 @@ export class DriverController {
   async goOffline(@CurrentUser() user: User) {
     const vehicle = await this.driverService.goOffline(user.id);
     return { success: true, data: vehicle };
+  }
+
+  @ApiOperation({ summary: 'Discover open passenger ride requests' })
+  @ApiResponse({ status: 200, description: 'List of REQUESTED rides.' })
+  @Get('requests')
+  async getRequests(@Query() query: GetRequestsDto) {
+    const requests = await this.driverService.getRequests(query);
+    return { success: true, data: requests };
   }
 }
