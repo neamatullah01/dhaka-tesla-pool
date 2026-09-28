@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { ZonesModule } from './modules/zones/zones.module.js';
+import { DriverModule } from './modules/driver/driver.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ZonesModule } from './modules/zones/zones.module.js';
     UsersModule,
     AuthModule,
     ZonesModule,
+    DriverModule,
   ],
   controllers: [AppController],
   providers: [AppService],
