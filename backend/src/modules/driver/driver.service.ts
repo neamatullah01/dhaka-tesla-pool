@@ -237,4 +237,119 @@ export class DriverService {
       return pool;
     }, { maxWait: 15000, timeout: 15000 });
   }
+
+  async getCurrentPool(driverId: string) {
+    const pool = await this.prisma.pool.findFirst({
+      where: {
+        driverId,
+        status: { in: [PoolStatus.OPEN, PoolStatus.DRIVER_ARRIVED, PoolStatus.STARTED] }
+      },
+      include: {
+        members: {
+          include: {
+            rideRequest: {
+              include: {
+                passenger: { select: { name: true } },
+                pickupZone: { select: { name: true } },
+                destinationZone: { select: { name: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!pool) {
+      throw new NotFoundException('No active pool found for this driver');
+    }
+    return pool;
+  }
+
+  async completeRide(driverId: string, rideId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const ride = await tx.rideRequest.findUnique({
+        where: { id: rideId },
+        include: { poolMembership: { include: { pool: true } } }
+      });
+
+      if (!ride) throw new NotFoundException('Ride not found');
+      if (!ride.poolMembership) throw new BadRequestException('Ride is not in a pool');
+      if (ride.poolMembership.pool.driverId !== driverId) throw new BadRequestException('Not your pool');
+      if (ride.status !== RideStatus.STARTED) throw new BadRequestException('Ride must be STARTED to complete');
+
+      const updatedRide = await tx.rideRequest.update({
+        where: { id: ride.id },
+        data: { status: RideStatus.COMPLETED, completedAt: new Date() }
+      });
+
+      await tx.poolMember.update({
+        where: { id: ride.poolMembership.id },
+        data: { status: PoolMemberStatus.COMPLETED, completedAt: new Date() }
+      });
+
+      await tx.rideStatusHistory.create({
+        data: {
+          rideRequestId: ride.id,
+          fromStatus: RideStatus.STARTED,
+          toStatus: RideStatus.COMPLETED,
+          changedById: driverId,
+          note: 'Driver completed individual ride'
+        }
+      });
+
+      // Check if pool is fully completed
+      const allMembers = await tx.poolMember.findMany({ where: { poolId: ride.poolMembership.poolId } });
+      const allDone = allMembers.every(m => m.status === PoolMemberStatus.COMPLETED || m.status === PoolMemberStatus.CANCELLED);
+
+      if (allDone) {
+        await tx.pool.update({
+          where: { id: ride.poolMembership.poolId },
+          data: { status: PoolStatus.COMPLETED, completedAt: new Date() }
+        });
+        await tx.vehicle.update({
+          where: { driverId },
+          data: { status: VehicleStatus.ONLINE }
+        });
+      }
+
+      return updatedRide;
+    });
+  }
+
+  async confirmPayment(driverId: string, rideId: string) {
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+      include: { poolMembership: { include: { pool: true } }, payment: true }
+    });
+
+    if (!ride) throw new NotFoundException('Ride not found');
+    if (!ride.poolMembership || ride.poolMembership.pool.driverId !== driverId) throw new BadRequestException('Not your ride');
+    if (ride.status !== RideStatus.COMPLETED) throw new BadRequestException('Ride must be COMPLETED to confirm payment');
+    if (!ride.payment) throw new NotFoundException('Payment record not found');
+    if (ride.payment.status === 'PAID') throw new BadRequestException('Payment already confirmed');
+
+    return this.prisma.payment.update({
+      where: { id: ride.payment.id },
+      data: { status: 'PAID', paidAt: new Date() }
+    });
+  }
+
+  async getRides(driverId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const rides = await this.prisma.rideRequest.findMany({
+      where: {
+        poolMembership: { pool: { driverId } }
+      },
+      include: {
+        pickupZone: { select: { name: true } },
+        destinationZone: { select: { name: true } },
+        passenger: { select: { name: true } },
+        payment: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+    return rides;
+  }
 }

@@ -10,6 +10,7 @@ import { ZonesModule } from './modules/zones/zones.module.js';
 import { DriverModule } from './modules/driver/driver.module.js';
 import { FaresModule } from './modules/fares/fares.module.js';
 import { RidesModule } from './modules/rides/rides.module.js';
+import { PoolsModule } from './modules/pools/pools.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RidesModule } from './modules/rides/rides.module.js';
     DriverModule,
     FaresModule,
     RidesModule,
+    PoolsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
