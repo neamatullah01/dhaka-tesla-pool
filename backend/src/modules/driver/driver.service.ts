@@ -2,7 +2,8 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
-import { VehicleStatus } from '@prisma/client';
+import { GetRequestsDto } from './dto/get-requests.dto.js';
+import { VehicleStatus, RideStatus } from '@prisma/client';
 
 @Injectable()
 export class DriverService {
@@ -79,5 +80,49 @@ export class DriverService {
       where: { id: vehicle.id },
       data: { status: VehicleStatus.OFFLINE },
     });
+  }
+
+  async getRequests(dto: GetRequestsDto) {
+    const whereClause: any = {
+      status: RideStatus.REQUESTED,
+    };
+
+    if (dto.pickupZoneId) {
+      whereClause.pickupZoneId = dto.pickupZoneId;
+    }
+
+    if (dto.corridorCode) {
+      whereClause.pickupZone = {
+        ...(whereClause.pickupZone || {}),
+        corridorCode: dto.corridorCode,
+      };
+    }
+
+    if (dto.date) {
+      const startOfDay = new Date(`${dto.date}T00:00:00.000Z`);
+      const endOfDay = new Date(`${dto.date}T23:59:59.999Z`);
+      whereClause.createdAt = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
+    }
+
+    const requests = await this.prisma.rideRequest.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        pickupZoneId: true,
+        destinationZoneId: true,
+        seatsRequested: true,
+        totalFarePaisa: true,
+        createdAt: true,
+        pickupZone: { select: { name: true, corridorCode: true } },
+        destinationZone: { select: { name: true, corridorCode: true } },
+        passenger: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return requests;
   }
 }
