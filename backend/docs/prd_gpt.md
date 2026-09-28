@@ -148,6 +148,7 @@ The challenge explicitly warns against adding technologies merely to make the ar
 | Containerization  | Docker + Docker Compose             | Reproducible environment       |
 | Logging           | NestJS Logger                       | Application logs               |
 | Version control   | Git + GitHub                        | Source control                 |
+| API Documentation | Swagger (@nestjs/swagger)           | OpenAPI Specification          |
 
 ## 5.2 Why This Stack
 
@@ -1577,6 +1578,15 @@ INTERNAL_SERVER_ERROR
 
 # 33. API Endpoint Specification
 
+## Swagger API Documentation
+
+Industry-standard interactive API documentation is available via Swagger.
+In local development, the Swagger UI is accessible at:
+```text
+http://localhost:3000/api/docs
+```
+It requires Bearer Auth for protected routes. All API endpoints moving forward must include Swagger decorators (`@ApiTags`, `@ApiOperation`, `@ApiResponse`, etc.) to automatically populate this documentation.
+
 ## Auth
 
 ```text
@@ -1814,8 +1824,7 @@ Implement:
 
 ```text
 PASSENGER
-DRIVER
-ADMIN
+DRIVE
 ```
 
 For MVP:
@@ -1823,9 +1832,7 @@ For MVP:
 - PASSENGER
 - DRIVER
 
-are enough.
-
-ADMIN can remain reserved for future.
+are enough
 
 ---
 
