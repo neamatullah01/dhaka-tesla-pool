@@ -17,7 +17,12 @@ interface RideRequestCardProps {
   zones: Zone[];
 }
 
-export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }: RideRequestCardProps) {
+export function RideRequestCard({
+  onSubmit,
+  formValues,
+  onValuesChange,
+  zones,
+}: RideRequestCardProps) {
   const sortedZones = [...zones].sort((a, b) => a.order - b.order);
 
   const form = useForm<RideRequestInput>({
@@ -27,11 +32,16 @@ export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }:
       destinationZoneId: "",
       requestedSeats: 1,
       paymentMethod: "CASH",
-      ...formValues
+      ...formValues,
     },
   });
 
-  const { handleSubmit, control, watch, formState: { errors } } = form;
+  const {
+    handleSubmit,
+    control,
+    watch,
+    formState: { errors },
+  } = form;
   const pickupZoneId = watch("pickupZoneId");
   const destinationZoneId = watch("destinationZoneId");
 
@@ -48,23 +58,29 @@ export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }:
     onSubmit(data);
   };
 
-  const pickupZone = sortedZones.find(z => z.id === pickupZoneId);
-  const destinationZone = sortedZones.find(z => z.id === destinationZoneId);
+  const pickupZone = sortedZones.find((z) => z.id === pickupZoneId);
+  const destinationZone = sortedZones.find((z) => z.id === destinationZoneId);
 
   const pickupOptions = sortedZones;
 
   const destinationOptions = pickupZone
-    ? sortedZones.filter((z) => z.id !== pickupZoneId && z.corridorCode === pickupZone.corridorCode)
+    ? sortedZones.filter(
+        (z) =>
+          z.id !== pickupZoneId && z.corridorCode === pickupZone.corridorCode,
+      )
     : sortedZones;
 
   return (
-    <SectionCard 
-      title="Request a ride" 
-      icon={CarFront}
-    >
-      <div className="-mt-5 mb-6 text-label-sm text-on-surface-variant">Shared Bullet · 3 seats</div>
-      
-      <form id="ride-request-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-6">
+    <SectionCard title="Request a ride" icon={CarFront}>
+      <div className="-mt-5 mb-6 text-label-sm text-on-surface-variant">
+        Shared Bullet · 3 seats
+      </div>
+
+      <form
+        id="ride-request-form"
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="flex flex-col gap-6"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Controller
             control={control}
@@ -79,7 +95,11 @@ export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }:
                   value={field.value}
                   onChange={field.onChange}
                 />
-                {errors.pickupZoneId && <span className="text-error text-label-sm">{errors.pickupZoneId.message}</span>}
+                {errors.pickupZoneId && (
+                  <span className="text-error text-label-sm">
+                    {errors.pickupZoneId.message}
+                  </span>
+                )}
               </div>
             )}
           />
@@ -91,22 +111,26 @@ export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }:
                 <ZoneField
                   label="Destination zone"
                   icon={Flag}
-                  iconClassName="text-black"
+                  iconClassName="text-white"
                   placeholder="Select destination zone"
                   options={destinationOptions}
                   value={field.value}
                   onChange={field.onChange}
                 />
-                {errors.destinationZoneId && <span className="text-error text-label-sm">{errors.destinationZoneId.message}</span>}
+                {errors.destinationZoneId && (
+                  <span className="text-error text-label-sm">
+                    {errors.destinationZoneId.message}
+                  </span>
+                )}
               </div>
             )}
           />
         </div>
 
-        <ZoneCorridor 
-          zones={sortedZones} 
-          pickupId={pickupZoneId} 
-          destinationId={destinationZoneId} 
+        <ZoneCorridor
+          zones={sortedZones}
+          pickupId={pickupZoneId}
+          destinationId={destinationZoneId}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -121,7 +145,10 @@ export function RideRequestCard({ onSubmit, formValues, onValuesChange, zones }:
             control={control}
             name="paymentMethod"
             render={({ field }) => (
-              <PaymentMethodSelector value={field.value as any} onChange={field.onChange} />
+              <PaymentMethodSelector
+                value={field.value as any}
+                onChange={field.onChange}
+              />
             )}
           />
         </div>
