@@ -1,7 +1,10 @@
+import { AuthShell } from "@/components/auth/AuthShell";
+import { RegisterCard } from "@/components/auth/RegisterCard";
+
 export default function RegisterPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-4xl font-bold">Register</h1>
-    </div>
+    <AuthShell className="max-w-4xl">
+      <RegisterCard />
+    </AuthShell>
   );
 }

@@ -1,10 +1,17 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api/v1";
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "/api/v1";
+
+export interface ApiError {
+  status: number;
+  code: string;
+  message: string;
+  details?: any;
+}
 
 class ApiClient {
   private getAccessToken(): string | null {
     if (typeof window !== "undefined") {
-      // Access token is kept in memory in real app, but for simplicity we might use a closure or store.
-      // Zustand store will handle memory state. We'll expose a way to inject it.
+      // Access token is kept in memory in real app
       return (window as any).__accessToken || null;
     }
     return null;
@@ -24,23 +31,35 @@ class ApiClient {
       ...options.headers,
     };
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    let response;
+    try {
+      response = await fetch(`${BASE_URL}${endpoint}`, {
+        credentials: "include",
+        ...options,
+        headers,
+      });
+    } catch (err: any) {
+      throw {
+        status: 0,
+        code: "NETWORK_ERROR",
+        message: "Network error. Please check if the backend is running and CORS is configured.",
+      } as ApiError;
+    }
 
     if (response.status === 401) {
-      // Need to handle refresh token flow here. 
-      // For now, throw error or trigger global auth logout
+      // Refresh flow not implemented here yet
     }
 
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      throw {
+      const apiError: ApiError = {
         status: response.status,
-        ...data,
+        code: data?.error?.code || (typeof data?.error === 'string' ? data.error : null) || "UNKNOWN_ERROR",
+        message: data?.error?.message || data?.message || "Something went wrong. Please try again.",
+        details: data?.error?.details || data?.details,
       };
+      throw apiError;
     }
 
     return data;

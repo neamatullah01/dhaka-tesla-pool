@@ -1,7 +1,10 @@
+import { AuthShell } from "@/components/auth/AuthShell";
+import { LoginCard } from "@/components/auth/LoginCard";
+
 export default function LoginPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-4xl font-bold">Login</h1>
-    </div>
+    <AuthShell>
+      <LoginCard />
+    </AuthShell>
   );
 }
