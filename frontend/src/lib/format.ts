@@ -6,3 +6,13 @@ export function formatPaisa(paisa: number): string {
 export function formatMeters(m: number): string {
   return `${m.toLocaleString()} m`;
 }
+
+export function formatDate(date: string | Date | number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  }).format(new Date(date));
+}
