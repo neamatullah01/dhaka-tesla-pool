@@ -23,7 +23,7 @@ class ApiClient {
     }
   }
 
-  private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
+  private async fetchWithAuth<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = this.getAccessToken();
     const headers = {
       "Content-Type": "application/json",
@@ -62,31 +62,31 @@ class ApiClient {
       throw apiError;
     }
 
-    return data;
+    return data as T;
   }
 
-  get(endpoint: string, options?: RequestInit) {
-    return this.fetchWithAuth(endpoint, { ...options, method: "GET" });
+  get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+    return this.fetchWithAuth<T>(endpoint, { ...options, method: "GET" });
   }
 
-  post(endpoint: string, body?: any, options?: RequestInit) {
-    return this.fetchWithAuth(endpoint, {
+  post<T = any>(endpoint: string, body?: any, options?: RequestInit): Promise<T> {
+    return this.fetchWithAuth<T>(endpoint, {
       ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  patch(endpoint: string, body?: any, options?: RequestInit) {
-    return this.fetchWithAuth(endpoint, {
+  patch<T = any>(endpoint: string, body?: any, options?: RequestInit): Promise<T> {
+    return this.fetchWithAuth<T>(endpoint, {
       ...options,
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  delete(endpoint: string, options?: RequestInit) {
-    return this.fetchWithAuth(endpoint, { ...options, method: "DELETE" });
+  delete<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+    return this.fetchWithAuth<T>(endpoint, { ...options, method: "DELETE" });
   }
 }
 
