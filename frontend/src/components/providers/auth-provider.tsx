@@ -1,20 +1,26 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { apiClient } from "@/lib/api-client";
+import { usePathname, useRouter } from "next/navigation";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { setAuth, clearAuth, setInitializing, isInitializing } = useAuthStore();
+  const { user, isAuthenticated, setAuth, clearAuth, setInitializing, isInitializing } = useAuthStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     async function initAuth() {
       try {
-        // Assuming your backend has an endpoint that uses the refresh token
-        // cookie to issue a new access token on reload.
         const res = await apiClient.post("/auth/refresh");
-        if (res?.success && res.data?.accessToken) {
-          setAuth(res.data.user, res.data.accessToken);
+        // Fallback checks just in case the wrapper structure is missing
+        const userData = res?.data?.user || (res as any)?.user;
+        const token = res?.data?.accessToken || (res as any)?.accessToken;
+        
+        if (userData && token) {
+          setAuth(userData, token);
         } else {
           clearAuth();
         }
@@ -25,10 +31,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    initAuth();
-  }, [setAuth, clearAuth, setInitializing]);
+    if (isInitializing) {
+      initAuth();
+    }
+  }, [setAuth, clearAuth, setInitializing, isInitializing]);
 
-  if (isInitializing) {
+  useEffect(() => {
+    if (isInitializing) return;
+
+    const isDriverRoute = pathname.startsWith("/driver");
+    const isPassengerRoute = pathname.startsWith("/passenger");
+    const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+
+    if (!isAuthenticated) {
+      if (isDriverRoute || isPassengerRoute) {
+        router.replace("/login");
+      } else {
+        setIsAuthorized(true);
+      }
+    } else {
+      // User is authenticated
+      if (user?.role === "DRIVER" && (isPassengerRoute || isAuthRoute || pathname === "/")) {
+        router.replace("/driver/dashboard");
+      } else if (user?.role === "PASSENGER" && (isDriverRoute || isAuthRoute || pathname === "/")) {
+        router.replace("/passenger/request-ride");
+      } else {
+        setIsAuthorized(true);
+      }
+    }
+  }, [isInitializing, isAuthenticated, user, pathname, router]);
+
+  if (isInitializing || !isAuthorized) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
