@@ -381,56 +381,58 @@ export function CabinGauge({ pool, capacity }: CabinGaugeProps) {
             Current Route Overview
           </h4>
 
-          <div className="flex items-center justify-between relative mt-2 mb-2 px-2">
-            {/* Connecting Line */}
-            <div className="absolute left-6 right-6 top-[11px] h-1 bg-surface-container-highest rounded-full overflow-hidden">
-              <div className="h-full w-2/3 bg-gradient-to-r from-primary to-secondary/20 animate-pulse opacity-50" />
-            </div>
-
-            {/* Origin Node */}
-            <div className="relative flex flex-col items-center gap-2 z-10 w-24">
-              <div className="w-6 h-6 rounded-full bg-primary-container border-2 border-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.3)] bg-opacity-90">
-                <MapPin className="w-3 h-3 text-on-primary-container" />
+          <div className="w-full overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+            <div className="flex items-center justify-between relative mt-2 mb-2 px-2 min-w-[320px]">
+              {/* Connecting Line */}
+              <div className="absolute left-10 right-10 top-[11px] h-1 bg-surface-container-highest rounded-full overflow-hidden">
+                <div className="h-full w-2/3 bg-gradient-to-r from-primary to-secondary/20 animate-pulse opacity-50" />
               </div>
-              <span className="text-[11px] font-bold text-on-surface truncate w-full text-center">
-                {origin || "Pickup"}
-              </span>
-              <span className="text-[8px] uppercase tracking-wider text-primary font-bold">
-                Origin
-              </span>
-            </div>
 
-            {/* Destination Nodes */}
-            {destinations.length > 0 ? (
-              destinations.map((dest, i) => (
-                <div
-                  key={i}
-                  className="relative flex flex-col items-center gap-2 z-10 w-24"
-                >
+              {/* Origin Node */}
+              <div className="relative flex flex-col items-center gap-2 z-10 w-20 sm:w-24 shrink-0">
+                <div className="w-6 h-6 rounded-full bg-primary-container border-2 border-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.3)] bg-opacity-90">
+                  <MapPin className="w-3 h-3 text-on-primary-container" />
+                </div>
+                <span className="text-[11px] font-bold text-on-surface truncate w-full text-center px-1">
+                  {origin || "Pickup"}
+                </span>
+                <span className="text-[8px] uppercase tracking-wider text-primary font-bold">
+                  Origin
+                </span>
+              </div>
+
+              {/* Destination Nodes */}
+              {destinations.length > 0 ? (
+                destinations.map((dest, i) => (
+                  <div
+                    key={i}
+                    className="relative flex flex-col items-center gap-2 z-10 w-20 sm:w-24 shrink-0"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-surface-container-high border-2 border-outline-variant/50 flex items-center justify-center bg-opacity-90">
+                      <Navigation className="w-3 h-3 text-on-surface-variant" />
+                    </div>
+                    <span className="text-[11px] font-bold text-on-surface truncate w-full text-center px-1">
+                      {dest}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-wider text-on-surface-variant font-bold">
+                      Drop {i + 1}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="relative flex flex-col items-center gap-2 z-10 w-20 sm:w-24 shrink-0">
                   <div className="w-6 h-6 rounded-full bg-surface-container-high border-2 border-outline-variant/50 flex items-center justify-center bg-opacity-90">
                     <Navigation className="w-3 h-3 text-on-surface-variant" />
                   </div>
-                  <span className="text-[11px] font-bold text-on-surface truncate w-full text-center">
-                    {dest}
+                  <span className="text-[11px] font-bold text-on-surface truncate w-full text-center px-1">
+                    TBD
                   </span>
                   <span className="text-[8px] uppercase tracking-wider text-on-surface-variant font-bold">
-                    Drop {i + 1}
+                    Destination
                   </span>
                 </div>
-              ))
-            ) : (
-              <div className="relative flex flex-col items-center gap-2 z-10 w-24">
-                <div className="w-6 h-6 rounded-full bg-surface-container-high border-2 border-outline-variant/50 flex items-center justify-center bg-opacity-90">
-                  <Navigation className="w-3 h-3 text-on-surface-variant" />
-                </div>
-                <span className="text-[11px] font-bold text-on-surface truncate w-full text-center">
-                  TBD
-                </span>
-                <span className="text-[8px] uppercase tracking-wider text-on-surface-variant font-bold">
-                  Destination
-                </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
