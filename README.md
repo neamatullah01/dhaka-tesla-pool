@@ -25,8 +25,8 @@ If three separate passengers (e.g. Nusrat, Rafiq, Shirin) request rides on overl
 
 *(Visual diagrams are available in the `/docs` folder)*
 
-- **Architecture Diagram:** `docs/architecture.png`
-- **ERD / Database Diagram:** `docs/erd.png`
+- **Architecture Diagram:** [docs/architecture.png](./docs/architecture.png)
+- **ERD / Database Diagram:** [docs/erd.png](./docs/erd.png)
 
 ---
 
@@ -139,4 +139,5 @@ Antigravity suggested calculating a dedicated `isRedirecting` state from the `cu
 Initially, the AI generated all the Driver Dashboard UI code inside a single massive `page.tsx` file. I rejected this monolithic approach and instructed it to break down the UI into smaller, reusable components (`DriverHeader`, `CabinGauge`, `PoolDispatch`, `RequestStream`, `TelemetryVector`, and `StatsRow`). This enforced a cleaner, more modular architecture that aligns with React best practices.
 
 *(Note: AI tools were used to accelerate execution, but all business logic, database architectures, capacity enforcement algorithms, and state machines were strictly designed, reviewed, debugged, and owned by me.)*
+
 
