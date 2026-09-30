@@ -97,7 +97,7 @@ export function RequestStream({ requests, pool, isLoading, onAccept, isAccepting
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-4 mb-5 pb-5 border-b border-outline-variant/20">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5 pb-5 border-b border-outline-variant/20">
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase text-on-surface-variant tracking-wider font-semibold mb-1">Pickup</span>
                     <span className="text-label-sm font-bold text-on-surface truncate">{req.pickupZone?.name}</span>
@@ -109,40 +109,40 @@ export function RequestStream({ requests, pool, isLoading, onAccept, isAccepting
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase text-on-surface-variant tracking-wider font-semibold mb-1">Detour Latency</span>
                     <span className="text-label-sm font-bold text-primary flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="w-3 h-3 shrink-0" />
                       +1.8 mins
                     </span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] uppercase text-on-surface-variant tracking-wider font-semibold mb-1">Corridor Index</span>
-                    <span className="text-label-sm font-bold text-on-surface flex items-center gap-1">
-                      <Navigation2 className="w-3 h-3 text-primary-container" />
-                      Seq #3 • On Vector
+                    <span className="text-label-sm font-bold text-on-surface flex items-center gap-1 truncate">
+                      <Navigation2 className="w-3 h-3 text-primary-container shrink-0" />
+                      Seq #3
                     </span>
                   </div>
                 </div>
 
                 {canFit ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <button 
                       onClick={() => {
                         setLoadingId(req.id);
                         onAccept(req.id);
                       }}
                       disabled={isAccepting || loadingId === req.id}
-                      className="flex-1 bg-primary-container text-on-primary-container font-bold text-label-md py-3 rounded-lg flex items-center justify-center gap-2 transition hover:brightness-110 shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)] disabled:opacity-50"
+                      className="flex-1 bg-primary-container text-on-primary-container font-bold text-label-md py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition hover:brightness-110 shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)] disabled:opacity-50 text-center"
                     >
                       {loadingId === req.id && isAccepting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                       ) : (
-                        <Check className="w-4 h-4" />
+                        <Check className="w-4 h-4 shrink-0" />
                       )}
                       {loadingId === req.id && isAccepting 
                         ? "Accepting..." 
-                        : `Accept Passenger & Fill Cabin (${pool ? pool.seatsReserved + req.seatsRequested : req.seatsRequested}/${pool?.totalCapacity || 3})`
+                        : <span className="truncate">Accept & Fill ({pool ? pool.seatsReserved + req.seatsRequested : req.seatsRequested}/{pool?.totalCapacity || 3})</span>
                       }
                     </button>
-                    <button className="px-5 py-3 rounded-lg border border-outline-variant/30 text-on-surface font-label font-bold text-label-md hover:bg-surface-variant/50 transition flex items-center justify-center gap-2">
+                    <button className="px-5 py-3 rounded-lg border border-outline-variant/30 text-on-surface font-label font-bold text-label-md hover:bg-surface-variant/50 transition flex items-center justify-center gap-2 shrink-0">
                       <X className="w-4 h-4 text-on-surface-variant" />
                       Decline
                     </button>

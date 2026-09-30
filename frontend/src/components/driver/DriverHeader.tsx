@@ -89,8 +89,8 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
         </div>
       </div>
 
-      <div className="flex items-center gap-8 relative z-10 w-full lg:w-auto justify-between lg:justify-end">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 relative z-10 w-full lg:w-auto justify-between lg:justify-end">
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <div className="w-12 h-12 rounded-full border-4 border-primary/20 flex items-center justify-center relative">
             <svg className="absolute inset-0 w-full h-full -rotate-90">
               <circle cx="20" cy="20" r="20" className="stroke-primary fill-none stroke-[4]" strokeDasharray="125" strokeDashoffset="15" />
