@@ -98,7 +98,11 @@ export default function RideStatusPage() {
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
-                    onClick={() => cancelMutation.mutate(currentRide.id)}
+                    onClick={() => cancelMutation.mutate(currentRide.id, {
+                      onSuccess: () => {
+                        router.push("/passenger/request-ride");
+                      }
+                    })}
                     disabled={cancelMutation.isPending}
                     className="w-full h-12 rounded-lg bg-transparent border border-error/50 text-error hover:bg-error-container/30 font-label text-lg font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >

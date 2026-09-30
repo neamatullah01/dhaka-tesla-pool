@@ -20,7 +20,7 @@ export function AppHeader() {
             <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
               <Zap className="w-5 h-5 text-primary-container" aria-hidden="true" />
             </div>
-            <span className="font-headline text-headline-md text-primary tracking-tight hidden sm:inline-block">
+            <span className="font-headline text-title-lg sm:text-headline-md text-primary tracking-tight">
               Dhaka Tesla Pool
             </span>
           </div>
