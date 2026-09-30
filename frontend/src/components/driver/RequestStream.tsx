@@ -1,7 +1,8 @@
-import { Radar, User, Check, X, Navigation2, Clock } from "lucide-react";
+import { Radar, User, Check, X, Navigation2, Clock, Loader2 } from "lucide-react";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { DriverRideRequest, DriverPool } from "@/hooks/useDriver";
 import { formatPaisa } from "@/lib/format";
+import { useState, useEffect } from "react";
 
 interface RequestStreamProps {
   requests: DriverRideRequest[];
@@ -13,6 +14,13 @@ interface RequestStreamProps {
 
 export function RequestStream({ requests, pool, isLoading, onAccept, isAccepting }: RequestStreamProps) {
   const availableSeats = pool ? pool.totalCapacity - pool.seatsReserved : 3;
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAccepting) {
+      setLoadingId(null);
+    }
+  }, [isAccepting]);
 
   return (
     <SectionCard
@@ -21,13 +29,13 @@ export function RequestStream({ requests, pool, isLoading, onAccept, isAccepting
       right={
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold">Corridor Optimizer v2.4 Active</span>
+          <span className="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold">Live Stream</span>
         </div>
       }
       className="h-full border border-outline-variant/10 shadow-[0_4px_24px_rgba(0,0,0,0.2)] bg-surface-container-low"
     >
       <p className="text-body-sm text-on-surface-variant mb-6">
-        Dynamic riders matching vehicle vector without detour latency (&le; 4.2 min delta).
+        Review incoming ride requests along your corridor and accept compatible passengers to maximize your earnings.
       </p>
 
       {isLoading ? (
@@ -117,12 +125,22 @@ export function RequestStream({ requests, pool, isLoading, onAccept, isAccepting
                 {canFit ? (
                   <div className="flex items-center gap-3">
                     <button 
-                      onClick={() => onAccept(req.id)}
-                      disabled={isAccepting}
+                      onClick={() => {
+                        setLoadingId(req.id);
+                        onAccept(req.id);
+                      }}
+                      disabled={isAccepting || loadingId === req.id}
                       className="flex-1 bg-primary-container text-on-primary-container font-bold text-label-md py-3 rounded-lg flex items-center justify-center gap-2 transition hover:brightness-110 shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)] disabled:opacity-50"
                     >
-                      <Check className="w-4 h-4" />
-                      Accept Passenger & Fill Cabin ({pool ? pool.seatsReserved + req.seatsRequested : req.seatsRequested}/{pool?.totalCapacity || 3})
+                      {loadingId === req.id && isAccepting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      {loadingId === req.id && isAccepting 
+                        ? "Accepting..." 
+                        : `Accept Passenger & Fill Cabin (${pool ? pool.seatsReserved + req.seatsRequested : req.seatsRequested}/${pool?.totalCapacity || 3})`
+                      }
                     </button>
                     <button className="px-5 py-3 rounded-lg border border-outline-variant/30 text-on-surface font-label font-bold text-label-md hover:bg-surface-variant/50 transition flex items-center justify-center gap-2">
                       <X className="w-4 h-4 text-on-surface-variant" />

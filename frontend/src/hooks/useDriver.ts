@@ -51,7 +51,8 @@ export function useDriverVehicle() {
         if (e.status === 404) return null;
         throw e;
       }
-    }
+    },
+    refetchInterval: 5000 // Always poll for fresh vehicle data
   });
 }
 
@@ -121,6 +122,7 @@ export function useAcceptRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["driverRequests"] });
       queryClient.invalidateQueries({ queryKey: ["currentPool"] });
+      queryClient.invalidateQueries({ queryKey: ["driverVehicle"] });
       toast.success("Request accepted");
     },
     onError: (error: ApiError) => toast.error(error.message || "Failed to accept request")
@@ -139,13 +141,7 @@ export function useCurrentPool() {
         throw e;
       }
     },
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      if (status && ["OPEN", "DRIVER_ARRIVED", "STARTED"].includes(status)) {
-        return 5000;
-      }
-      return false;
-    }
+    refetchInterval: 5000 // Constantly poll so dispatcher updates or cancellations appear instantly
   });
 }
 
@@ -179,6 +175,31 @@ export function useDriverStartTrip() {
   });
 }
 
+export function useUpdateRideStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ rideId, status }: { rideId: string; status: 'DRIVER_ARRIVED' | 'STARTED' | 'COMPLETED' | 'CANCELLED' }) => {
+      const res = await apiClient.patch<{ success: boolean; data: any }>(`/driver/rides/${rideId}/status`, { status });
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["currentPool"] });
+      queryClient.invalidateQueries({ queryKey: ["driverVehicle"] });
+      if (variables.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: ["driverHistory"] });
+        toast.success("Passenger dropped off and payment received!");
+      } else if (variables.status === 'DRIVER_ARRIVED') {
+        toast.success("Driver arrived at pickup zone");
+      } else if (variables.status === 'CANCELLED') {
+        toast.success("Passenger ride cancelled");
+      } else {
+        toast.success("Trip started for passenger");
+      }
+    },
+    onError: (error: ApiError) => toast.error(error.message || "Failed to update status")
+  });
+}
+
 export function useCompletePassenger() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -188,6 +209,7 @@ export function useCompletePassenger() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentPool"] });
+      queryClient.invalidateQueries({ queryKey: ["driverVehicle"] });
       toast.success("Passenger trip completed");
     },
     onError: (error: ApiError) => toast.error(error.message || "Failed to complete passenger trip")

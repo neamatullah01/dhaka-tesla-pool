@@ -77,13 +77,7 @@ export default function DriverDashboardPage() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           <div className="xl:col-span-4 flex flex-col gap-8">
             <CabinGauge pool={pool} capacity={vehicle?.capacity || 3} />
-            <PoolDispatch 
-              pool={pool} 
-              onArrive={() => pool && arriveMutation.mutate(pool.id)}
-              onStart={() => pool && startMutation.mutate(pool.id)}
-              onCompletePassenger={(rideId) => completeMutation.mutate(rideId)}
-              isActionLoading={arriveMutation.isPending || startMutation.isPending || completeMutation.isPending}
-            />
+            <PoolDispatch pool={pool} />
           </div>
 
           <div className="xl:col-span-8 flex flex-col gap-8">

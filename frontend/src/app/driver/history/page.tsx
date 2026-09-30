@@ -14,7 +14,7 @@ export default function DriverHistoryPage() {
   const filteredHistory = history.filter(ride => {
     if (filter === "ALL") return true;
     if (filter === "CANCELLED") {
-      return ride.status === "CANCELLED" || ride.status === "CANCELED" || ride.status === "REJECTED";
+      return ride.status === "CANCELLED";
     }
     return ride.status === filter;
   });

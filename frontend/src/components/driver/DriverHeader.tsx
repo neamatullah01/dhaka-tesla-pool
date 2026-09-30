@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface DriverHeaderProps {
   vehicle: Vehicle | null | undefined;
@@ -20,8 +21,19 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
   const router = useRouter();
 
   const handleLogout = () => {
-    clearAuth();
-    router.push('/login');
+    toast.warning("Are you sure you want to log out?", {
+      action: {
+        label: "Logout",
+        onClick: () => {
+          clearAuth();
+          router.push('/login');
+        }
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {}
+      }
+    });
   };
 
   if (isLoading) {
@@ -39,7 +51,7 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
   }
 
   const isOnline = vehicle?.status === "ONLINE" || vehicle?.status === "IN_TRIP";
-  const cannotGoOffline = vehicle?.status === "IN_TRIP" || hasActivePool;
+  const cannotGoOffline = hasActivePool;
 
   return (
     <div className="bg-surface-container-low rounded-xl p-6 md:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] border border-outline-variant/10 relative overflow-hidden">
@@ -93,10 +105,10 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
 
         <div className="w-px h-12 bg-outline-variant/30 hidden sm:block" />
 
-        <div className="flex items-center gap-4 bg-surface-container-highest px-4 py-2.5 rounded-xl border border-outline-variant/20 shadow-inner">
-          <div className="flex flex-col">
-            <span className="text-label-sm text-on-surface-variant uppercase font-semibold tracking-wider">Cockpit Status</span>
-            <span className={`text-label-md font-bold ${isOnline ? "text-primary-container" : "text-on-surface-variant"}`}>
+        <div className="flex items-center justify-between gap-4 bg-surface-container-highest px-4 h-12 rounded-xl border border-outline-variant/20 shadow-inner">
+          <div className="flex flex-col justify-center">
+            <span className="text-[10px] leading-tight text-on-surface-variant uppercase font-semibold tracking-wider">Cockpit</span>
+            <span className={`text-[12px] leading-tight font-bold ${isOnline ? "text-primary-container" : "text-on-surface-variant"}`}>
               {isOnline ? "ONLINE" : "OFFLINE"}
             </span>
           </div>
@@ -123,7 +135,7 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
         <div className="flex items-center gap-3">
           <Link
             href="/driver/history"
-            className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-highest hover:bg-surface-variant text-on-surface-variant hover:text-on-surface rounded-xl border border-outline-variant/20 transition-colors shadow-sm font-semibold text-label-md"
+            className="flex items-center justify-center gap-2 px-4 h-12 bg-surface-container-highest hover:bg-surface-variant text-on-surface-variant hover:text-on-surface rounded-xl border border-outline-variant/20 transition-colors shadow-sm font-semibold text-label-md"
             title="Ride History"
           >
             <History className="w-4 h-4" />
@@ -132,7 +144,7 @@ export function DriverHeader({ vehicle, hasActivePool, isLoading, onGoOnline, on
           
           <button
             onClick={handleLogout}
-            className="p-2.5 bg-error/10 hover:bg-error/20 text-error rounded-xl border border-error/20 transition-colors shadow-sm"
+            className="w-12 h-12 flex items-center justify-center bg-error/10 hover:bg-error/20 text-error rounded-xl border border-error/20 transition-colors shadow-sm"
             title="Logout"
           >
             <LogOut className="w-5 h-5" />
