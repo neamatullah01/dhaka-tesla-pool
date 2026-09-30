@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { User, UserRole, VehicleStatus } from '@prisma/client';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -30,6 +30,18 @@ export class AuthService {
       passwordHash,
       role: registerDto.role,
     });
+
+    if (user.role === UserRole.DRIVER) {
+      await this.prisma.vehicle.create({
+        data: {
+          driverId: user.id,
+          model: 'Default Tesla',
+          plateNo: `AUTO-${Math.floor(Math.random() * 90000) + 10000}`,
+          capacity: 3,
+          status: VehicleStatus.OFFLINE,
+        },
+      });
+    }
 
     return this.generateAuthResponse(user);
   }
