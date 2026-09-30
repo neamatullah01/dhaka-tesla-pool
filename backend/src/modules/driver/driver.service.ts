@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateVehicleDto } from './dto/create-vehicle.dto.js';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto.js';
 import { GetRequestsDto } from './dto/get-requests.dto.js';
-import { VehicleStatus, RideStatus, PoolStatus, PoolMemberStatus, Prisma } from '@prisma/client';
+import { VehicleStatus, RideStatus, PoolStatus, PoolMemberStatus, Prisma, PaymentStatus, PaymentMethod } from '@prisma/client';
 
 @Injectable()
 export class DriverService {
@@ -265,6 +265,93 @@ export class DriverService {
     return pool;
   }
 
+  async updateRideStatus(driverId: string, rideId: string, newStatus: RideStatus) {
+    return this.prisma.$transaction(async (tx) => {
+      const ride = await tx.rideRequest.findUnique({
+        where: { id: rideId },
+        include: { poolMembership: { include: { pool: true } } }
+      });
+      if (!ride) throw new NotFoundException('Ride not found');
+      if (!ride.poolMembership) throw new BadRequestException('Ride is not in a pool');
+      if (ride.poolMembership.pool.driverId !== driverId) throw new BadRequestException('Not your pool');
+      // 1. Update the RideRequest Status
+      const updatedRide = await tx.rideRequest.update({
+        where: { id: ride.id },
+        data: { 
+          status: newStatus,
+          ...(newStatus === RideStatus.STARTED ? { startedAt: new Date() } : {}),
+          ...(newStatus === RideStatus.COMPLETED ? { completedAt: new Date() } : {})
+        }
+      });
+      // 2. Map it to the correct PoolMember Status
+      let memberStatus = ride.poolMembership.status;
+      if (newStatus === RideStatus.STARTED) memberStatus = PoolMemberStatus.PICKED_UP;
+      if (newStatus === RideStatus.COMPLETED) memberStatus = PoolMemberStatus.COMPLETED;
+      if (newStatus === RideStatus.CANCELLED) memberStatus = PoolMemberStatus.CANCELLED;
+      await tx.poolMember.update({
+        where: { id: ride.poolMembership.id },
+        data: { 
+          status: memberStatus,
+          ...(newStatus === RideStatus.STARTED ? { pickedUpAt: new Date() } : {}),
+          ...(newStatus === RideStatus.COMPLETED ? { completedAt: new Date() } : {})
+        }
+      });
+      // 3. Free up reserved seats if CANCELLED
+      if (newStatus === RideStatus.CANCELLED) {
+        await tx.pool.update({
+          where: { id: ride.poolMembership.poolId },
+          data: {
+            seatsReserved: { decrement: ride.seatsRequested }
+          }
+        });
+      }
+      // 4. Log the history
+      await tx.rideStatusHistory.create({
+        data: {
+          rideRequestId: ride.id,
+          fromStatus: ride.status,
+          toStatus: newStatus,
+          changedById: driverId,
+          note: `Driver individually updated passenger to ${newStatus}`
+        }
+      });
+      // 5. If dropped off (COMPLETED), finalize Payment
+      if (newStatus === RideStatus.COMPLETED) {
+        await tx.payment.upsert({
+          where: { rideRequestId: ride.id },
+          update: {
+            status: PaymentStatus.PAID,
+            paidAt: new Date(),
+          },
+          create: {
+            rideRequestId: ride.id,
+            amountPaisa: ride.totalFarePaisa,
+            method: PaymentMethod.CASH,
+            status: PaymentStatus.PAID,
+            paidAt: new Date(),
+          }
+        });
+      }
+      // 6. Check if entire pool is completed
+      if (newStatus === RideStatus.COMPLETED || newStatus === RideStatus.CANCELLED) {
+        const allMembers = await tx.poolMember.findMany({ where: { poolId: ride.poolMembership.poolId } });
+        const allDone = allMembers.every(m => m.status === PoolMemberStatus.COMPLETED || m.status === PoolMemberStatus.CANCELLED);
+  
+        if (allDone) {
+          await tx.pool.update({
+            where: { id: ride.poolMembership.poolId },
+            data: { status: PoolStatus.COMPLETED, completedAt: new Date() }
+          });
+          await tx.vehicle.update({
+            where: { driverId },
+            data: { status: VehicleStatus.ONLINE }
+          });
+        }
+      }
+      return updatedRide;
+    });
+  }
+
   async completeRide(driverId: string, rideId: string) {
     return this.prisma.$transaction(async (tx) => {
       const ride = await tx.rideRequest.findUnique({
@@ -294,6 +381,21 @@ export class DriverService {
           toStatus: RideStatus.COMPLETED,
           changedById: driverId,
           note: 'Driver completed individual ride'
+        }
+      });
+
+      await tx.payment.upsert({
+        where: { rideRequestId: ride.id },
+        update: {
+          status: 'PAID',
+          paidAt: new Date(),
+        },
+        create: {
+          rideRequestId: ride.id,
+          amountPaisa: ride.totalFarePaisa,
+          method: 'CASH',
+          status: 'PAID',
+          paidAt: new Date(),
         }
       });
 

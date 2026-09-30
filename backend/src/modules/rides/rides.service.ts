@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { ZonesService } from '../zones/zones.service.js';
 import { FaresService } from '../fares/fares.service.js';
 import { CreateRideDto } from './dto/create-ride.dto.js';
+import { RideEstimateDto } from './dto/ride-estimate.dto.js';
 import { RideStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
 
 @Injectable()
@@ -12,6 +13,38 @@ export class RidesService {
     private readonly zonesService: ZonesService,
     private readonly faresService: FaresService,
   ) {}
+
+  async estimateFare(dto: RideEstimateDto) {
+    if (dto.pickupZoneId === dto.destinationZoneId) {
+      throw new BadRequestException('Pickup and destination cannot be the same');
+    }
+
+    const [pickup, destination] = await Promise.all([
+      this.prisma.zone.findUnique({ where: { id: dto.pickupZoneId } }),
+      this.prisma.zone.findUnique({ where: { id: dto.destinationZoneId } }),
+    ]);
+
+    if (!pickup || !destination) {
+      throw new NotFoundException('One or both zones not found');
+    }
+
+    const distanceMeters = Math.abs(pickup.routeOrder - destination.routeOrder) * 4000;
+    
+    const baseFarePaisa = 5000;
+    const ratePerMeterPaisa = 2;
+    const distanceCharge = distanceMeters * ratePerMeterPaisa;
+    
+    const poolEligible = dto.requestedSeats < 3;
+    const discountPaisa = poolEligible ? 2000 : 0;
+    
+    const totalFarePaisa = baseFarePaisa + distanceCharge - discountPaisa;
+
+    return {
+      distanceMeters,
+      farePaisa: totalFarePaisa,
+      poolEligible
+    };
+  }
 
   async createRide(passengerId: string, dto: CreateRideDto) {
     // 1. Check active ride
@@ -72,102 +105,77 @@ export class RidesService {
   }
 
   async cancelRide(passengerId: string, rideId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const ride = await tx.rideRequest.findUnique({
+    // Inside your cancel ride method:
+    const ride = await this.prisma.rideRequest.findUnique({
+      where: { id: rideId },
+      include: { poolMembership: true }
+    });
+
+    if (!ride) {
+      throw new NotFoundException('Ride not found');
+    }
+    if (ride.passengerId !== passengerId) {
+      throw new BadRequestException('Not your ride');
+    }
+
+    if (ride.status !== RideStatus.REQUESTED && ride.status !== RideStatus.MATCHED) {
+      throw new BadRequestException('Ride cannot be cancelled from its current state');
+    }
+
+    await this.prisma.$transaction(async (prisma) => {
+      // 1. Mark the ride as CANCELLED
+      await prisma.rideRequest.update({
         where: { id: rideId },
-        include: { poolMembership: true }
+        data: { 
+          status: 'CANCELLED', 
+          cancelledAt: new Date(),
+          cancellationReason: 'PASSENGER_CANCELLED'
+        }
+      });
+      
+      await prisma.rideStatusHistory.create({
+        data: {
+          rideRequestId: rideId,
+          fromStatus: ride.status,
+          toStatus: RideStatus.CANCELLED,
+          changedById: passengerId,
+          note: 'Passenger cancelled the ride'
+        }
       });
 
-      if (!ride) {
-        throw new NotFoundException('Ride not found');
-      }
-      if (ride.passengerId !== passengerId) {
-        throw new BadRequestException('Not your ride');
-      }
-
-      if (ride.status !== RideStatus.REQUESTED && ride.status !== RideStatus.MATCHED) {
-        throw new BadRequestException('Ride cannot be cancelled from its current state');
-      }
-
-      if (ride.status === RideStatus.REQUESTED) {
-        // Just cancel the ride
-        const updatedRide = await tx.rideRequest.update({
-          where: { id: ride.id },
-          data: { 
-            status: RideStatus.CANCELLED, 
-            cancelledAt: new Date(),
-            cancellationReason: 'PASSENGER_CANCELLED'
-          }
-        });
-        await tx.rideStatusHistory.create({
+      // 2. If the ride was already assigned to a pool, free up the seats!
+      if (ride.poolMembership) {
+        // Decrease the reserved seats on the pool
+        await prisma.pool.update({
+          where: { id: ride.poolMembership.poolId },
           data: {
-            rideRequestId: ride.id,
-            fromStatus: RideStatus.REQUESTED,
-            toStatus: RideStatus.CANCELLED,
-            changedById: passengerId,
-            note: 'Passenger cancelled before matching'
+            seatsReserved: { decrement: ride.seatsRequested }
           }
         });
-        return updatedRide;
-      }
-
-      // If MATCHED, handle pool un-matching
-      if (ride.status === RideStatus.MATCHED && ride.poolMembership) {
-        const poolId = ride.poolMembership.poolId;
-
-        // Lock pool row
-        const lockedPools = await tx.$queryRaw<any[]>`
-          SELECT "totalCapacity", "seatsReserved" FROM pools WHERE id = ${poolId} FOR UPDATE
-        `;
-
-        if (lockedPools.length > 0) {
-          await tx.poolMember.update({
-            where: { id: ride.poolMembership.id },
-            data: { status: 'CANCELLED', cancelledAt: new Date() }
-          });
-
-          await tx.pool.update({
-            where: { id: poolId },
-            data: { seatsReserved: { decrement: ride.seatsRequested } }
-          });
-        }
-
-        const updatedRide = await tx.rideRequest.update({
-          where: { id: ride.id },
-          data: { 
-            status: RideStatus.CANCELLED, 
-            cancelledAt: new Date(),
-            cancellationReason: 'PASSENGER_CANCELLED'
-          }
-        });
-
-        await tx.rideStatusHistory.create({
-          data: {
-            rideRequestId: ride.id,
-            fromStatus: RideStatus.MATCHED,
-            toStatus: RideStatus.CANCELLED,
-            changedById: passengerId,
-            note: 'Passenger cancelled after matching'
-          }
+        
+        // Optional: Mark the pool member as cancelled
+        await prisma.poolMember.update({
+          where: { id: ride.poolMembership.id },
+          data: { status: 'CANCELLED', cancelledAt: new Date() }
         });
 
         // If all pool members are cancelled, cancel the pool
-        const allMembers = await tx.poolMember.findMany({ where: { poolId } });
+        const allMembers = await prisma.poolMember.findMany({ where: { poolId: ride.poolMembership.poolId } });
         const activeMembers = allMembers.filter(m => m.status !== 'CANCELLED' && m.status !== 'COMPLETED');
         if (activeMembers.length === 0) {
-          const pool = await tx.pool.update({
-            where: { id: poolId },
+          const pool = await prisma.pool.update({
+            where: { id: ride.poolMembership.poolId },
             data: { status: 'CANCELLED', cancelledAt: new Date() }
           });
-          await tx.vehicle.update({
+          await prisma.vehicle.update({
             where: { id: pool.vehicleId },
             data: { status: 'ONLINE' }
           });
         }
-
-        return updatedRide;
       }
     });
+
+    return await this.prisma.rideRequest.findUnique({ where: { id: rideId } });
   }
 
   async getCurrentRide(passengerId: string) {
