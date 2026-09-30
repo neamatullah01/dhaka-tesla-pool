@@ -20,9 +20,7 @@ export function BrandPanel({ onFill }: BrandPanelProps) {
         Share a seat. Split the fare. Survive Dhaka traffic.
       </p>
       
-      {process.env.NODE_ENV !== "production" && (
-        <DemoAccounts onFill={onFill} />
-      )}
+      <DemoAccounts onFill={onFill} />
     </>
   );
 }
