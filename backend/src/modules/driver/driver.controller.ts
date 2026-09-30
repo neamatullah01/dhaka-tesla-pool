@@ -7,7 +7,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { UserRole } from '@prisma/client';
+import { UserRole, RideStatus } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { User } from '@prisma/client';
 
@@ -81,6 +81,15 @@ export class DriverController {
   async getCurrentPool(@CurrentUser() user: User) {
     const pool = await this.driverService.getCurrentPool(user.id);
     return { success: true, data: pool };
+  }
+
+  @Patch('rides/:id/status')
+  async updateRideStatus(
+    @CurrentUser() user: User, 
+    @Param('id') rideId: string, 
+    @Body('status') status: RideStatus
+  ) {
+    return this.driverService.updateRideStatus(user.id, rideId, status);
   }
 
   @ApiOperation({ summary: 'Complete an individual ride in a pool' })

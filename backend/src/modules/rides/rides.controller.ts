@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UseGuards, Get, Param, Query } from '@nestjs/common';
 import { RidesService } from './rides.service.js';
 import { CreateRideDto } from './dto/create-ride.dto.js';
+import { RideEstimateDto } from './dto/ride-estimate.dto.js';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -16,6 +17,14 @@ import type { User } from '@prisma/client';
 @Controller('rides')
 export class RidesController {
   constructor(private readonly ridesService: RidesService) {}
+
+  @ApiOperation({ summary: 'Estimate ride fare' })
+  @ApiResponse({ status: 200, description: 'Returns fare estimation' })
+  @Post('estimate')
+  async estimateFare(@Body() dto: RideEstimateDto) {
+    const data = await this.ridesService.estimateFare(dto);
+    return { success: true, data };
+  }
 
   @ApiOperation({ summary: 'Request a new ride' })
   @ApiResponse({ status: 201, description: 'Ride requested successfully' })
