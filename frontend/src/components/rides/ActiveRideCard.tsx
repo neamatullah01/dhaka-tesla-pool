@@ -33,8 +33,10 @@ export function ActiveRideCard({ data }: ActiveRideCardProps) {
   let openSeatsCount = 3 - requestedSeats;
   let otherSeatsCount = 0;
   
-  if (data.pool && (data.pool as any).seatsReserved !== undefined) {
-    const totalReserved = (data.pool as any).seatsReserved;
+  const poolData = data.pool || (data as any).poolMembership?.pool;
+  
+  if (poolData && poolData.seatsReserved !== undefined) {
+    const totalReserved = poolData.seatsReserved;
     otherSeatsCount = Math.max(0, totalReserved - requestedSeats);
     openSeatsCount = Math.max(0, 3 - totalReserved);
   }
@@ -94,17 +96,17 @@ export function ActiveRideCard({ data }: ActiveRideCardProps) {
       <SectionCard
         title="Cabin capacity"
         icon={Armchair}
-        right={data.pool?.vehicle ? <StatusBadge tone="success">{data.pool.vehicle.name}</StatusBadge> : undefined}
+        right={poolData?.vehicle ? <StatusBadge tone="success">{poolData.vehicle.model || poolData.vehicle.name}</StatusBadge> : undefined}
       >
         <CabinSeats seats={cabinSeats} />
-        {data.status !== "REQUESTED" && data.pool && (
+        {data.status !== "REQUESTED" && poolData && (
           <div className="flex flex-col gap-1 mt-4">
             <div className="text-label-md text-on-surface-variant">
-              Driver: <span className="text-on-surface">{data.pool.driver?.name || "waiting for a match"}</span>
+              Driver: <span className="text-on-surface">{poolData.driver?.name || "waiting for a match"}</span>
             </div>
-            {data.pool.driver?.plateNo && (
+            {poolData.vehicle?.plateNo && (
               <div className="text-label-md text-on-surface-variant">
-                Plate No: <span className="text-on-surface font-label">{data.pool.driver.plateNo}</span>
+                Plate No: <span className="text-on-surface font-label">{poolData.vehicle.plateNo}</span>
               </div>
             )}
           </div>
