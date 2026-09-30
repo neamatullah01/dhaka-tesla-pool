@@ -1,4 +1,4 @@
-import { User, Wallet, History, ArrowRight } from "lucide-react";
+import { User, Wallet, History, ArrowRight, Zap, Leaf } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface RouteInfo {
@@ -12,11 +12,15 @@ interface WelcomeBannerProps {
   recentRoutes?: RouteInfo[];
 }
 
-export function WelcomeBanner({ name, balancePaisa, recentRoutes }: WelcomeBannerProps) {
+export function WelcomeBanner({
+  name,
+  balancePaisa = 0,
+  recentRoutes,
+}: WelcomeBannerProps) {
   return (
-    <div className="relative overflow-hidden rounded-xl p-6 md:p-8 bg-surface-container-low bg-gradient-to-br from-primary-container/15 via-surface-container-low to-surface-container-low shadow-md">
+    <div className="relative overflow-hidden rounded-xl p-6 md:p-8 bg-surface-container-low bg-gradient-to-br from-primary-container/15 via-surface-container-low to-surface-container-low shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-outline-variant/20">
       <div className="absolute -left-10 -top-10 w-72 h-48 rounded-full bg-secondary-container/10 blur-3xl pointer-events-none" />
-      
+
       <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6 z-10">
         <div className="flex flex-col gap-4 max-w-xl flex-1 min-w-[280px]">
           <div>
@@ -29,43 +33,44 @@ export function WelcomeBanner({ name, balancePaisa, recentRoutes }: WelcomeBanne
             Welcome back, {name}
           </h1>
           <p className="text-body-md text-on-surface-variant">
-            Pick your zones, choose your seats and see your fare before you confirm.
+            Pick your zones, choose your seats and see your fare before you
+            confirm. Share a seat and save on your ride.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-          {balancePaisa !== undefined && (
-            <div className="bg-surface-container/70 rounded-lg p-4 flex flex-col justify-center min-w-[200px]">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Wallet className="w-[14px] h-[14px] text-on-surface-variant" aria-hidden="true" />
-                <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">TeslaPay balance</span>
-              </div>
-              <div className="font-label text-headline-md font-bold text-primary">
-                ৳{(balancePaisa / 100).toFixed(2)}
-              </div>
-              <div className="text-label-sm text-on-surface-variant mt-0.5">
-                {balancePaisa.toLocaleString()} paisa
-              </div>
+          {/* TeslaPay Balance Card */}
+          <div className="bg-surface-container-highest/50 backdrop-blur-sm rounded-xl p-5 flex flex-col justify-center min-w-[180px] border border-outline-variant/30 shadow-sm relative overflow-hidden group hover:border-primary/30 transition-colors">
+            <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-colors" />
+            <div className="flex items-center gap-1.5 mb-2 relative z-10">
+              <Wallet className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+              <span className="text-[9px] uppercase tracking-wider text-on-surface-variant font-bold">
+                TeslaPay balance
+              </span>
             </div>
-          )}
+            <div className="font-headline text-headline-sm font-bold text-on-surface relative z-10">
+              ৳{(balancePaisa / 100).toFixed(2)}
+            </div>
+          </div>
 
-          {recentRoutes && recentRoutes.length > 0 && (
-            <div className="flex flex-col justify-center gap-2">
-              <div className="text-label-sm uppercase tracking-wider text-on-surface-variant">
-                Recent routes
-              </div>
-              <div className="flex flex-col gap-2">
-                {recentRoutes.map((route, i) => (
-                  <button key={i} type="button" className="bg-surface-container rounded-lg px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high flex items-center gap-2 transition-colors">
-                    <History className="w-[14px] h-[14px] text-primary-container" aria-hidden="true" />
-                    {route.from}
-                    <ArrowRight className="w-3 h-3 text-on-surface-variant" aria-hidden="true" />
-                    {route.to}
-                  </button>
-                ))}
-              </div>
+          {/* Premium Fleet Stat Card */}
+          <div className="bg-gradient-to-br from-primary-container/20 to-surface-container-highest/50 backdrop-blur-sm border border-primary-container/30 rounded-xl p-5 flex flex-col justify-center min-w-[180px] shadow-sm relative overflow-hidden group hover:border-primary-container/50 transition-colors">
+            <div className="absolute -top-2 -right-2 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+              <Zap className="w-16 h-16 text-primary" />
             </div>
-          )}
+            <div className="flex items-center gap-1.5 mb-2 relative z-10">
+              <Leaf className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+              <span className="text-[9px] uppercase tracking-wider text-primary font-bold">
+                Fleet Status
+              </span>
+            </div>
+            <div className="font-headline text-title-md font-bold text-on-surface relative z-10 mb-0.5">
+              100% Electric
+            </div>
+            <div className="text-[10px] text-on-surface-variant relative z-10 font-medium">
+              Zero emission rides
+            </div>
+          </div>
         </div>
       </div>
     </div>

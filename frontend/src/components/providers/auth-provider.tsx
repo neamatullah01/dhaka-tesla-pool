@@ -63,8 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (isInitializing || !isAuthorized) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background overflow-hidden z-50">
+        {/* Background glow blobs */}
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary-container/10 rounded-full blur-[100px] pointer-events-none animate-pulse duration-3000" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-secondary-container/10 rounded-full blur-[120px] pointer-events-none animate-pulse duration-3000 delay-1000" />
+
+        <div className="relative z-10 flex flex-col items-center gap-6 p-8 w-[500px] text-center">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+            <div className="w-16 h-16 border-4 border-primary/30 border-t-primary border-r-primary rounded-full animate-spin relative z-10 shadow-[0_0_15px_rgba(var(--color-primary),0.5)]" />
+          </div>
+          
+          <div className="flex flex-col items-center gap-2 w-full">
+            <h2 className="text-2xl font-bold font-headline text-on-surface bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-container animate-pulse whitespace-nowrap">
+              Starting the Engine
+            </h2>
+          </div>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { Armchair, Info, MapPin, Flag, ChevronRight } from "lucide-react";
+import { Armchair, Info, MapPin, Flag, ChevronRight, Loader2 } from "lucide-react";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CabinSeats, SeatData } from "./CabinSeats";
@@ -9,23 +9,24 @@ interface CabinCapacityCardProps {
   pools?: ActivePoolData[];
   onRequestSeat?: (poolId: string) => void;
   isLoading?: boolean;
+  isJoiningPool?: boolean;
+  joiningPoolId?: string;
 }
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function CabinCapacityCard({ pools = [], onRequestSeat, isLoading }: CabinCapacityCardProps) {
+export function CabinCapacityCard({ pools = [], onRequestSeat, isLoading, isJoiningPool, joiningPoolId }: CabinCapacityCardProps) {
   if (isLoading) {
     return (
-      <div className="bg-surface-container-low rounded-xl p-6 md:p-8 shadow-md">
-        <div className="flex items-center gap-3 mb-6">
-          <Skeleton className="w-8 h-8 rounded-lg bg-surface-container-highest" />
-          <Skeleton className="h-7 w-48 rounded bg-surface-container-highest" />
+      <SectionCard
+        title="Live active pools"
+        icon={Armchair}
+      >
+        <div className="bg-surface-container-lowest rounded-lg p-12 flex flex-col items-center justify-center text-center gap-4 border border-dashed border-outline-variant">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-body-md text-on-surface font-semibold animate-pulse">Scanning live telemetry for active pools...</p>
         </div>
-        <div className="flex flex-col gap-4">
-          <Skeleton className="w-full h-32 rounded-lg bg-surface-container-highest" />
-          <Skeleton className="w-full h-32 rounded-lg bg-surface-container-highest" />
-        </div>
-      </div>
+      </SectionCard>
     );
   }
 
@@ -89,9 +90,17 @@ export function CabinCapacityCard({ pools = [], onRequestSeat, isLoading }: Cabi
                 </div>
                 <button 
                   onClick={() => onRequestSeat?.(pool.id)}
-                  className="flex items-center justify-center px-5 py-2.5 bg-primary-container text-on-primary-container text-label-md font-bold rounded-full hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)]"
+                  disabled={isJoiningPool}
+                  className="flex items-center justify-center px-5 py-2.5 bg-primary-container text-on-primary-container text-label-md font-bold rounded-full hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.2)] hover:shadow-[0_0_20px_rgba(0,242,254,0.4)] disabled:opacity-50 disabled:cursor-not-allowed gap-2"
                 >
-                  Join Pool
+                  {isJoiningPool && joiningPoolId === pool.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    "Join Pool"
+                  )}
                 </button>
               </div>
             </div>

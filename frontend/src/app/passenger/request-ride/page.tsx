@@ -68,6 +68,9 @@ export default function RequestRidePage() {
   const { data: activePools = [], isLoading: isLoadingPools } = useActivePools(formValues.pickupZoneId, formValues.destinationZoneId);
   const joinPoolMutation = useJoinPool();
 
+  const isRedirecting = currentRide && ["MATCHED", "DRIVER_ARRIVED", "STARTED", "COMPLETED"].includes(currentRide.status);
+  const showSkeleton = isCheckingRide || isLoadingZones || isRedirecting;
+
   return (
     <div className="min-h-screen flex flex-col bg-background relative">
       {/* Background glow blobs */}
@@ -77,7 +80,7 @@ export default function RequestRidePage() {
       <AppHeader />
       
       <main className="mx-auto max-w-[1480px] w-full px-4 md:px-8 py-6 flex flex-col gap-8 relative z-10">
-        {isCheckingRide || isLoadingZones ? (
+        {showSkeleton ? (
           <div className="w-full h-[140px] bg-surface-container-low rounded-xl p-6 shadow-md flex flex-col justify-between">
             <Skeleton className="w-24 h-6 rounded" />
             <div className="flex flex-col gap-2 mt-4">
@@ -86,12 +89,12 @@ export default function RequestRidePage() {
             </div>
           </div>
         ) : !currentRide && (
-          <WelcomeBanner name={user?.name || "Passenger"} />
+          <WelcomeBanner name={user?.name || "Passenger"} balancePaisa={user?.walletBalancePaisa} />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 flex flex-col gap-8 order-2 lg:order-1">
-            {isCheckingRide ? (
+          <div className="lg:col-span-7 flex flex-col gap-8">
+            {showSkeleton ? (
               <div className="flex flex-col gap-6 bg-surface-container-low rounded-xl p-6 md:p-8 shadow-md">
                 <Skeleton className="w-48 h-8 bg-surface-variant rounded" />
                 <Skeleton className="w-full h-12 bg-surface-variant rounded mt-4" />
@@ -108,7 +111,7 @@ export default function RequestRidePage() {
               <ActiveRideCard data={currentRide} />
             )}
             
-            {isCheckingRide || isLoadingZones ? (
+            {showSkeleton ? (
               <div className="bg-surface-container-low rounded-xl p-6 shadow-md flex flex-col gap-4 h-64 mt-8">
                 <Skeleton className="w-48 h-8 rounded" />
                 <Skeleton className="w-full h-16 rounded" />
@@ -119,8 +122,8 @@ export default function RequestRidePage() {
             )}
           </div>
           
-          <div className="lg:col-span-5 flex flex-col gap-8 order-1 lg:order-2">
-            {currentRide && (
+          <div className="lg:col-span-5 flex flex-col gap-8">
+            {currentRide && !isRedirecting && (
               <div className="flex flex-col gap-8">
                 {(currentRide.fare || currentRide.totalFarePaisa !== undefined) && (
                   <SectionCard
@@ -156,10 +159,12 @@ export default function RequestRidePage() {
               </div>
             )}
             
-            {!currentRide && (
+            {!currentRide && !showSkeleton && (
               <CabinCapacityCard 
                 pools={activePools} 
-                isLoading={isLoadingPools || isCheckingRide || isLoadingZones}
+                isLoading={isLoadingPools}
+                isJoiningPool={joinPoolMutation.isPending}
+                joiningPoolId={joinPoolMutation.variables?.poolId}
                 onRequestSeat={(poolId) => {
                   joinPoolMutation.mutate({
                     poolId,
@@ -173,7 +178,7 @@ export default function RequestRidePage() {
             )}
             
             {!currentRide && (
-              isCheckingRide || isLoadingZones ? (
+              showSkeleton ? (
                 <div className="bg-surface-container-low rounded-xl p-6 shadow-md flex flex-col gap-4">
                   <Skeleton className="w-48 h-8 rounded" />
                   <Skeleton className="w-full h-32 rounded" />
